@@ -1,0 +1,37 @@
+{
+  "name": "@slo-fiscal-verification/fiscal-verification-of-invoices-for-slovenia",
+  "version": "1.0.0",
+  "description": "Slovenian fiscal verification module",
+  "main": "sloFiscalVerfication.js",
+  "directories": {
+    "test": "mocha"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Thermidor/Fiscal-verification-of-invoices-for-Slovenia.git"
+  },
+  "keywords": [
+    "FURS",
+    "fiscal",
+    "verification",
+    "tax",
+    "register",
+    "Slovenija"
+  ],
+  "author": "Jurij Zelič",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/Thermidor/Fiscal-verification-of-invoices-for-Slovenia/issues"
+  },
+  "homepage": "https://github.com/Thermidor/Fiscal-verification-of-invoices-for-Slovenia#readme",
+  "dependencies": {
+    "base64url": "^3.0.1",
+    "get-env": "^0.5.10",
+    "mocha": "^8.3.0",
+    "utf8": "^3.0.0",
+    "uuid": "^8.3.2"
+  }
+}
