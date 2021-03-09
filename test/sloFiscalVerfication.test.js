@@ -193,6 +193,17 @@ const assert = require('assert');describe('Test Fiscal Verification', () => {
                 console.error("Invoice VAT liable returned ERROR")
                 console.error(rv)
             })
-    });         
+    });
+    it('should revert (storno) invoice for VAT liable issuer', () => {
+        fiscalVerfication.issueInvoice(invoiceVATLiableReverse, certDescriptor)
+            .then(function(rv) {
+                console.info("Invoice VAT liable reverse returned")
+                console.info(rv)
+            })
+            .catch(function(rv) {
+                console.error("Invoice VAT liable reverse returned ERROR")
+                console.error(rv)
+            })
+    });              
 });
 
