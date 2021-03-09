@@ -16,7 +16,7 @@ const prodPort = 9003
 //
 ///////////////////////////////////
 const ping = (certDescriptor) => {
-    console.log("Environment " + env)
+    console.info("Environment " + env)
 
     var jsonRequest = {
         "EchoRequest":    "furs"
@@ -25,31 +25,46 @@ const ping = (certDescriptor) => {
     
     var pingOptions = getOptions("echo", data.length, certDescriptor);     
     const req = https.request(pingOptions, (res) => {
-        console.log(`statusCode: ${res.statusCode}`)
+        console.info(`statusCode: ${res.statusCode}`)
         res.on('data', (d) => {
             process.stdout.write(d)
         })
-    })
-    req.on('error', (error) => {
-        console.error(error)
-    })
+    }).on('error', (err) => {
+        console.error("Error: " + err.message);
+    });
 
     req.write(data)
     req.end()
 }
 
 const registerPremises = (premises, certDescriptor) => {
-    var checkStatus = checkPremises(premises)
-    if (checkStatus != "OK") 
-        return checkStatus;
-    return issueDocument("invoices/register", premises, certDescriptor)
+    return new Promise((resolve, reject) => {
+        var checkStatus = checkPremises(premises)
+        if (checkStatus != "OK") 
+            reject(checkStatus);
+        issueDocument("invoices/register", premises, certDescriptor, function(rv) {
+            if (rv.BusinessPremiseResponse.Error) {
+                reject("NOK: " + rv.BusinessPremiseResponse.Error.ErrorCode + " " + rv.BusinessPremiseResponse.Error.ErrorMessage)
+            } else {
+                resolve(rv.BusinessPremiseResponse.Header)
+            }
+        })
+    })
 }
 
 const issueInvoice = (invoice, certDescriptor) => {
-    var checkStatus = checkInvoice(invoice)
-    if (checkStatus != "OK") 
-        return checkStatus;
-    return issueDocument("invoices", invoice, certDescriptor)
+    return new Promise((resolve, reject) => {
+        var checkStatus = checkInvoice(invoice)
+        if (checkStatus != "OK") 
+            reject(checkStatus);
+        return issueDocument("invoices", invoice, certDescriptor, function(rv) {
+            if (rv.InvoiceResponse.Error) {
+                reject("NOK: " + rv.InvoiceResponse.Error.ErrorCode + " " + rv.InvoiceResponse.Error.ErrorMessage)
+            } else {
+                resolve(rv.InvoiceResponse.Header)
+            }
+        })
+    })
 }
 
 ///////////////////////////////////
@@ -58,14 +73,16 @@ const issueInvoice = (invoice, certDescriptor) => {
 //
 ///////////////////////////////////
 const checkPremises = (premises) => {
+    // todo check premises
     return "OK"
 }
 
 const checkInvoice = (invoice) => {
+    // todo check invoice
     return "OK"
 }
 
-const issueDocument = (service, doc, certDescriptor) => {
+const issueDocument = (service, doc, certDescriptor, callback) => {
     var header = getHeaderBase64(certDescriptor)  
     var boddy = getBoddyBase64(doc)
     var signedToken = getSignedToken(header + "." + boddy, certDescriptor)
@@ -73,20 +90,21 @@ const issueDocument = (service, doc, certDescriptor) => {
      
     var issueOptions = getOptions(service, data.length, certDescriptor);     
     const req = https.request(issueOptions, (res) => {
-        if (res.statusCode != 200) throw error
+        if (res.statusCode != 200) callback("NOK: HTTP " + res.statusCode)
         res.on('data', (d) => {
+            //console.log(d.toString())
             var status = JSON.parse(d.toString())
             var responseFields = status.token.split(".")
             var heaader = responseFields[0]
             var signature = responseFields[2]
             // todo check signature
             var body = base64url.decode(responseFields[1])
-            console.log(body)
+            callback(JSON.parse(body))
         })
-    })
-    req.on('error', (error) => {
-        console.error(error)
-    })
+    }).on('error', (err) => {
+        console.error("Error: " + err.message)
+        callback("NOK: " + err.message)
+    });
 
     req.write(data)
     req.end()

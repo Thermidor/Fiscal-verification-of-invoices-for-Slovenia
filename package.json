@@ -1,5 +1,5 @@
 {
-  "name": "@slo-fiscal-verification/fiscal-verification-of-invoices-for-slovenia",
+  "name": "slo-fiscal-verification",
   "version": "1.0.0",
   "description": "Slovenian fiscal verification module",
   "main": "sloFiscalVerfication.js",
@@ -22,7 +22,7 @@
     "Slovenija"
   ],
   "author": "Jurij Zelič",
-  "license": "GPL-3.0-or-later",
+  "license": "LGPL-3.0-or-later",
   "bugs": {
     "url": "https://github.com/Thermidor/Fiscal-verification-of-invoices-for-Slovenia/issues"
   },
