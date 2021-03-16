@@ -91,18 +91,20 @@ const issueDocument = (service, doc, certDescriptor, callback) => {
     var data = JSON.stringify({ "token": signedToken})
      
     var issueOptions = getOptions(service, data.length, certDescriptor);     
-    const req = https.request(issueOptions, (res) => {
-        if (res.statusCode != 200) callback("NOK: HTTP " + res.statusCode)
-        res.on('data', (d) => {
-            //console.log("Length " + d.length)
-            //console.log(d.toString())
-            var status = JSON.parse(d.toString())
-            var responseFields = status.token.split(".")
-            var heaader = responseFields[0]
-            var signature = responseFields[2]
+    const req = https.request(issueOptions, (resp) => {
+        var data = '';
+        if (resp.statusCode != 200) callback("NOK: HTTP " + resp.statusCode)
+        resp.on('data', (chunk) => {
+            data += chunk;
+        })
+        resp.on('end', () => {
+            const status = JSON.parse(data)
+            const responseFields = status.token.split(".")
+            const heaader = responseFields[0]
+            const signature = responseFields[2]
             // todo check signature
-            var body = base64url.decode(responseFields[1])
-            callback(JSON.parse(body))
+            const body = base64url.decode(responseFields[1])
+            callback(JSON.parse(body)) 
         })
     }).on('error', (err) => {
         console.error("Error: " + err.message)
@@ -172,9 +174,7 @@ const getZoi = (invoice, certDescriptor) => {
     
     var zoi = taxNumber+zoiInvoiceDate+invoiceNo+premiseId+deviceId+ammount.toFixed(2)
     var signedZoi = parseHexString(signString(zoi, certDescriptor))
-    console.log(signedZoi)
     var buf = Buffer.from(signedZoi);
-    console.log(buf)
     return crypto.createHash('md5').update(buf).digest("hex")
 }
 
