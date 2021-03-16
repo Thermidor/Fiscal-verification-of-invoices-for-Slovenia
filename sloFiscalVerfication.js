@@ -61,6 +61,8 @@ const issueInvoice = (invoice, certDescriptor) => {
             if (rv.InvoiceResponse.Error) {
                 reject("NOK: " + rv.InvoiceResponse.Error.ErrorCode + " " + rv.InvoiceResponse.Error.ErrorMessage)
             } else {
+                var response = rv.InvoiceResponse.Header
+                response.zoi = getZoi(invoice, certDescriptor)
                 resolve(rv.InvoiceResponse.Header)
             }
         })
@@ -92,6 +94,7 @@ const issueDocument = (service, doc, certDescriptor, callback) => {
     const req = https.request(issueOptions, (res) => {
         if (res.statusCode != 200) callback("NOK: HTTP " + res.statusCode)
         res.on('data', (d) => {
+            //console.log("Length " + d.length)
             //console.log(d.toString())
             var status = JSON.parse(d.toString())
             var responseFields = status.token.split(".")
@@ -155,14 +158,49 @@ const getOptions = (service, len, certDescriptor) => {
 } 
 
 const getSignedToken = (token, certDescriptor) => {
+    var base64Signature = base64url(parseHexString(signString(token, certDescriptor)))
+    return token + "." + base64Signature
+}
+
+const getZoi = (invoice, certDescriptor) => {
+    var taxNumber = invoice.InvoiceRequest.Invoice.TaxNumber
+    var zoiInvoiceDate = toZoiTime(invoice.InvoiceRequest.Invoice.IssueDateTime)
+    var invoiceNo = invoice.InvoiceRequest.Invoice.InvoiceIdentifier.InvoiceNumber
+    var premiseId = invoice.InvoiceRequest.Invoice.InvoiceIdentifier.BusinessPremiseID
+    var deviceId = invoice.InvoiceRequest.Invoice.InvoiceIdentifier.ElectronicDeviceID
+    var ammount = invoice.InvoiceRequest.Invoice.InvoiceAmount
+    
+    var zoi = taxNumber+zoiInvoiceDate+invoiceNo+premiseId+deviceId+ammount.toFixed(2)
+    var signedZoi = parseHexString(signString(zoi, certDescriptor))
+    console.log(signedZoi)
+    var buf = Buffer.from(signedZoi);
+    console.log(buf)
+    return crypto.createHash('md5').update(buf).digest("hex")
+}
+
+const signString = (value, certDescriptor)  => {
     var privateKey = getPrivateKey(certDescriptor.keyFile)
         
     var sign = crypto.createSign('sha256WithRSAEncryption');
-    sign.write(token);
+    sign.write(value);
     sign.end();
-    var signature = sign.sign(privateKey, 'hex');
-    var base64Signature = base64url(parseHexString(signature))
-    return token + "." + base64Signature
+    return signature = sign.sign(privateKey, 'hex');
+}
+
+const toZoiTime = (invDate)  => {
+    var time = new Date(invDate);
+    return pad(time.getDate(), 2) + "." +
+           pad((time.getMonth()+1), 2) + "." +
+           (1900 + time.getYear()) + " " +
+           pad(time.getHours(), 2) + ":" +
+           pad(time.getMinutes(), 2) + ":" +
+           pad(time.getSeconds(),2 )
+}
+
+const pad = (num, size) => {
+    num = num.toString();
+    while (num.length < size) num = "0" + num;
+    return num;
 }
 
 const getPrivateKey = (keyFile) => {
